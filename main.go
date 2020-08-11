@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"os"
+
+	"github.com/ilikerice123/puzzle/picture"
+)
 
 func main() {
-	fmt.Println("HELLO WORLD! DIS MY NEW PUZZLE APP WHAT UP")
+	picture.SliceImage(os.Args[1], 4, 4)
 }

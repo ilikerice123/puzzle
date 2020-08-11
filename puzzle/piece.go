@@ -8,8 +8,7 @@ type Metadata struct {
 
 // Position represents a 2d position on the puzzle
 type Position struct {
-	X int
-	Y int
+	X, Y int
 }
 
 // Piece represents a single puzzle piece

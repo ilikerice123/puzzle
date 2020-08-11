@@ -27,3 +27,8 @@ func (p Pool) worker(id int) {
 		puzzle.Do(req.Request)
 	}
 }
+
+func (p Pool) addPuzzle(file string, xSize int, ySize int) {
+	puzzle := NewPuzzle(file, xSize, ySize)
+	p.puzzles[puzzle.id] = puzzle
+}

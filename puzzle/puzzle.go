@@ -3,6 +3,8 @@ package puzzle
 import (
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func min(a, b int) int {
@@ -42,6 +44,8 @@ type Puzzle struct {
 
 // NewPuzzle creates the new puzzle
 func NewPuzzle(file string, xSize int, ySize int) *Puzzle {
+	puzzle := Puzzle{}
+	puzzle.id = uuid.New().String()
 	return &Puzzle{}
 }
 
