@@ -50,8 +50,3 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	WriteSuccess(w, map[string]string{"uuid": uuid})
 }
-
-// PreviewImage returns an image for preview
-func PreviewImage(w http.ResponseWriter, r *http.Request) {
-
-}
