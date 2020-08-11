@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ilikerice123/puzzle/picture"
 )
 
 func min(a, b int) int {
@@ -20,8 +21,9 @@ type Base interface {
 
 	GetUpdateBatch(position int, batch int) []Update
 
-	// GetUpdate blocking gets a single update
 	GetUpdate(position int) Update
+
+	Shuffle()
 
 	Complete() bool
 
@@ -35,18 +37,41 @@ type Puzzle struct {
 	heldPieces    map[string]*Piece
 	size          int
 	piecesCorrect int
-	latestMove    int
 	updates       []Update
-	lock          *sync.Mutex
+	lock          sync.Locker
 	// used for broadcasting to updates
 	cv *sync.Cond
 }
 
-// NewPuzzle creates the new puzzle
-func NewPuzzle(file string, xSize int, ySize int) *Puzzle {
-	puzzle := Puzzle{}
-	puzzle.id = uuid.New().String()
-	return &Puzzle{}
+// NewPuzzle creates the new puzzle from the file string of an image
+func NewPuzzle(file string, ySize int, xSize int) (*Puzzle, error) {
+	pieceNames, err := picture.SliceImage(file, ySize, xSize)
+	if err != nil {
+		return nil, err
+	}
+	puzzle := Puzzle{
+		id:            uuid.New().String(),
+		pieces:        make([][]*Piece, ySize),
+		heldPieces:    make(map[string]*Piece),
+		size:          ySize * xSize,
+		piecesCorrect: 0,
+		updates:       make([]Update, 0),
+		lock:          &sync.Mutex{},
+		cv:            sync.NewCond(&sync.Mutex{})}
+
+	for i := range puzzle.pieces {
+		puzzle.pieces[i] = make([]*Piece, xSize)
+		for j := range puzzle.pieces[i] {
+			puzzle.pieces[i][j] = &Piece{
+				DestPos:  Position{Y: i, X: j},
+				CurrPos:  Position{Y: i, X: j},
+				ID:       i*xSize + j,
+				Metadata: Metadata{ImgURL: pieceNames[i][j]}}
+		}
+	}
+	puzzle.Shuffle()
+
+	return &puzzle, nil
 }
 
 // Do does the request on the puzzle
@@ -110,6 +135,11 @@ func (p *Puzzle) GetUpdate(position int) Update {
 		p.cv.L.Unlock()
 	}
 	return p.updates[position]
+}
+
+// Shuffle shuffles the puzzle
+func (p *Puzzle) Shuffle() {
+
 }
 
 // Complete returns if puzzle is finished

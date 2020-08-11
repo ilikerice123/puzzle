@@ -28,7 +28,11 @@ func (p Pool) worker(id int) {
 	}
 }
 
-func (p Pool) addPuzzle(file string, xSize int, ySize int) {
-	puzzle := NewPuzzle(file, xSize, ySize)
+func (p Pool) addPuzzle(file string, xSize int, ySize int) error {
+	puzzle, err := NewPuzzle(file, xSize, ySize)
+	if err != nil {
+		return err
+	}
 	p.puzzles[puzzle.id] = puzzle
+	return nil
 }

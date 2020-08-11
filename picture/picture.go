@@ -3,15 +3,21 @@ package picture
 import (
 	"fmt"
 	"image"
-	"image/png"
+
+	// for allowing image.Decode to understand gif
+	_ "image/gif"
+	"image/jpeg"
+
+	// for allowing image.Decode to understand png
+	_ "image/png"
 	"os"
 	"path"
 
 	"github.com/disintegration/gift"
 )
 
-// NewImage returns an image from a file system
-func NewImage(filename string) (image.Image, error) {
+// LoadImage returns an image from a file system
+func LoadImage(filename string) (image.Image, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -24,19 +30,19 @@ func NewImage(filename string) (image.Image, error) {
 	return img, nil
 }
 
-// SaveImage saves an image to the file system
+// SaveImage saves an image to the file system with the filename
 func SaveImage(filename string, img image.Image) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	return jpeg.Encode(f, img, nil)
 }
 
 // SliceImage slices up an image into a bunch of
 func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
-	img, err := NewImage(filename)
+	img, err := LoadImage(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +77,13 @@ func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
 	return imageNames, nil
 }
 
+// DownsizeImage resizes the image for a preview
+func DownsizeImage(img image.Image) {
+	filter := gift.New(gift.Resize(200, 0, gift.LanczosResampling))
+	dst := image.NewNRGBA(filter.Bounds(img.Bounds()))
+	filter.Draw(dst, img)
+}
+
 // normalizeImage resizes the image so the bounds are a multiple of ySize and xSize
 func normalizeImage(img image.Image, ySize int, xSize int) (height int, width int) {
 	bounds := img.Bounds()
@@ -81,7 +94,6 @@ func normalizeImage(img image.Image, ySize int, xSize int) (height int, width in
 	filter := gift.New(gift.CropToSize(width, height, gift.LeftAnchor))
 	dst := image.NewNRGBA(filter.Bounds(img.Bounds()))
 	filter.Draw(dst, img)
-	SaveImage("C:/Users/charl/go/src/github.com/ilikerice123/test.png", dst)
 	img = dst
 	return
 }
