@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/ilikerice123/puzzle/api"
+	"github.com/ilikerice123/puzzle/fs"
 	"github.com/ilikerice123/puzzle/game"
 )
 
@@ -17,9 +18,11 @@ func main() {
 	// picture.SliceImage("images/6bfdfa70-d02e-4ba7-a65b-b35627b22212/original.jpeg", 3, 4)
 
 	// make directory to store images
-	_, err := os.Stat("images")
-	if os.IsNotExist(err) {
-		err = os.Mkdir("images", 0666)
+	if fs.DirExists("images") {
+		err := os.Mkdir("images", 0666)
+		if err != nil {
+			log.Fatalf("unable to create images directory to store images")
+		}
 	}
 
 	// init global constants

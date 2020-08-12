@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/ilikerice123/puzzle/fs"
 	"github.com/ilikerice123/puzzle/picture"
 )
 
@@ -38,19 +39,18 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 	preview := picture.DownsizeImage(img)
 
 	uuid := uuid.New().String()
-	_, err = os.Stat("images/" + uuid)
-	if !os.IsNotExist(err) {
+	if !fs.DirExists("images/" + uuid) {
 		WriteError(w, 500, map[string]string{"error": "directory exists, probably a uuid collision"})
 		return
 	}
 
 	os.Mkdir("images/"+uuid, 0666)
-	err = picture.SaveImage("images/"+uuid+"/original.jpeg", img)
+	err = fs.SaveImage("images/"+uuid+"/original.jpeg", img)
 	if err != nil {
 		WriteError(w, 422, map[string]string{"error": err.Error()})
 		return
 	}
-	err = picture.SaveImage("images/"+uuid+"/preview.jpeg", preview)
+	err = fs.SaveImage("images/"+uuid+"/preview.jpeg", preview)
 	if err != nil {
 		WriteError(w, 422, map[string]string{"error": err.Error()})
 		return

@@ -6,14 +6,13 @@ import (
 
 	// for allowing image.Decode to understand gif
 	_ "image/gif"
-	"image/jpeg"
 
 	// for allowing image.Decode to understand png
 	_ "image/png"
-	"os"
 	"path"
 
 	"github.com/disintegration/gift"
+	"github.com/ilikerice123/puzzle/fs"
 )
 
 // TODO: the API for this package is a bit inconsistent:
@@ -22,33 +21,9 @@ import (
 // - some modify the iamge in place
 // should try and unify the API
 
-// LoadImage returns an image from a file system
-func LoadImage(filename string) (image.Image, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
-}
-
-// SaveImage saves an image to the file system with the filename
-func SaveImage(filename string, img image.Image) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return jpeg.Encode(f, img, nil)
-}
-
-// SliceImage slices up an image into a bunch of
+// SliceImage slices up an image into ySize*xSize pieces
 func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
-	img, err := LoadImage(filename)
+	img, err := fs.LoadImage(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +51,7 @@ func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
 			name := filename[0 : len(filename)-len(ext)]
 			fileName := fmt.Sprintf("%s_%d_%d%s", name, i, j, ext)
 
-			SaveImage(fileName, dst)
+			fs.SaveImage(fileName, dst)
 			imageNames[i][j] = fileName
 		}
 	}
