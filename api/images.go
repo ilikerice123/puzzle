@@ -39,8 +39,8 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 	preview := picture.DownsizeImage(img)
 
 	uuid := uuid.New().String()
-	if !fs.DirExists("images/" + uuid) {
-		WriteError(w, 500, map[string]string{"error": "directory exists, probably a uuid collision"})
+	if fs.DirExists("images/" + uuid) {
+		WriteError(w, 500, map[string]string{"error": "directory exists, probably uuid collision"})
 		return
 	}
 

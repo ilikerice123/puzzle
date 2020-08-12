@@ -18,7 +18,7 @@ func main() {
 	// picture.SliceImage("images/6bfdfa70-d02e-4ba7-a65b-b35627b22212/original.jpeg", 3, 4)
 
 	// make directory to store images
-	if fs.DirExists("images") {
+	if !fs.DirExists("images") {
 		err := os.Mkdir("images", 0666)
 		if err != nil {
 			log.Fatalf("unable to create images directory to store images")
@@ -33,6 +33,7 @@ func main() {
 	apiRouter := r.PathPrefix("/api").Subrouter()
 	api.RegisterImagesRoutes(apiRouter)
 	api.RegisterUsersRoutes(apiRouter)
+	api.RegisterPuzzlesRoutes(apiRouter)
 
 	srv := &http.Server{
 		Handler: r,

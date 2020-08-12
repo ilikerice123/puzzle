@@ -31,24 +31,25 @@ func GetPuzzle(w http.ResponseWriter, r *http.Request) {
 
 // CreatePuzzle creates a puzzle given a size
 func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
-	var userInfo map[string]interface{}
+	var userInfo map[string]int
+	id := mux.Vars(r)["id"]
 	err := json.NewDecoder(r.Body).Decode(&userInfo)
 	if err != nil {
 		WriteError(w, 422, map[string]string{"error": err.Error()})
 		return
 	}
-	id, ok := userInfo["id"].(string)
+
 	pictureFile := "images/" + id + "/original.jpeg"
-	if !ok || !fs.DirExists(pictureFile) {
+	if !fs.DirExists(pictureFile) {
 		WriteError(w, 422, map[string]string{"error": "invalid id provided"})
 	}
-	ySize, oky := userInfo["y_size"].(int)
-	xSize, okx := userInfo["x_size"].(int)
-	if !oky || !okx || ySize <= 0 || xSize <= 0 {
+
+	ySize := userInfo["y_size"]
+	xSize := userInfo["x_size"]
+	if ySize <= 0 || xSize <= 0 {
 		WriteError(w, 422, map[string]string{"error": "invalid x_size and y_size provided"})
 		return
 	}
-
 	puzzle := game.NewLivePuzzle(pictureFile, ySize, xSize, game.GlobalUserPool)
 	game.GlobalPuzzlePool.AddPuzzle(puzzle)
 	if puzzle == nil {

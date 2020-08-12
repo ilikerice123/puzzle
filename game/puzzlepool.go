@@ -15,8 +15,7 @@ type PuzzlePoolBase interface {
 
 // PuzzlePool represents the pool of interactable puzzles
 type PuzzlePool struct {
-	puzzles    map[string]LivePuzzleBase
-	numWorkers int
+	puzzles map[string]LivePuzzleBase
 }
 
 // GlobalPuzzlePool represents all the puzzles
@@ -24,7 +23,7 @@ var GlobalPuzzlePool PuzzlePoolBase
 
 // InitPuzzlePool assigns value to globalUserPool
 func InitPuzzlePool() {
-	GlobalPuzzlePool = &PuzzlePool{}
+	GlobalPuzzlePool = &PuzzlePool{puzzles: make(map[string]LivePuzzleBase)}
 }
 
 // AddPuzzle adds a puzzle to the pool
