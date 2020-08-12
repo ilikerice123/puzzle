@@ -21,6 +21,7 @@ type Request struct {
 //   * swap is implicitly a RELEASE state change if piece1ID == piece2
 // - if update is a HOLD, piece1ID and userID are populated
 type Update struct {
+	ID       int
 	Action   action
 	UserID   string
 	Piece1ID int

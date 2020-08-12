@@ -16,6 +16,12 @@ import (
 	"github.com/disintegration/gift"
 )
 
+// TODO: the API for this package is a bit inconsistent:
+// - some methods are file-based
+// - some return an image
+// - some modify the iamge in place
+// should try and unify the API
+
 // LoadImage returns an image from a file system
 func LoadImage(filename string) (image.Image, error) {
 	f, err := os.Open(filename)
@@ -78,10 +84,11 @@ func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
 }
 
 // DownsizeImage resizes the image for a preview
-func DownsizeImage(img image.Image) {
+func DownsizeImage(img image.Image) image.Image {
 	filter := gift.New(gift.Resize(200, 0, gift.LanczosResampling))
 	dst := image.NewNRGBA(filter.Bounds(img.Bounds()))
 	filter.Draw(dst, img)
+	return dst
 }
 
 // normalizeImage resizes the image so the bounds are a multiple of ySize and xSize

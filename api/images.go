@@ -35,6 +35,7 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, 422, map[string]string{"error": "error decoding image"})
 		return
 	}
+	preview := picture.DownsizeImage(img)
 
 	uuid := uuid.New().String()
 	_, err = os.Stat("images/" + uuid)
@@ -45,6 +46,11 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	os.Mkdir("images/"+uuid, 0666)
 	err = picture.SaveImage("images/"+uuid+"/original.jpeg", img)
+	if err != nil {
+		WriteError(w, 422, map[string]string{"error": err.Error()})
+		return
+	}
+	err = picture.SaveImage("images/"+uuid+"/preview.jpeg", preview)
 	if err != nil {
 		WriteError(w, 422, map[string]string{"error": err.Error()})
 		return

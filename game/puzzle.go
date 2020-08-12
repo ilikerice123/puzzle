@@ -1,7 +1,7 @@
 package game
 
 import (
-	"sync"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,54 +15,63 @@ func min(a, b int) int {
 	return b
 }
 
-// Base is an interface for the base Puzzle object
-type Base interface {
-	Do(r Request) bool
-
-	GetUpdateBatch(position int, batch int) []Update
-
-	GetUpdate(position int) Update
+// PuzzleBase is an interface for the base Puzzle object
+type PuzzleBase interface {
+	Do(r Request) (bool, error)
 
 	Shuffle()
 
 	Complete() bool
 
-	LastUpdated() time.Time
+	LastUpdatedTime() time.Time
+
+	GetID() string
 }
 
-// Puzzle representing a non-threadsafe puzzle objec that implements Base
+// Puzzle representing a non-threadsafe puzzle objec that implements PuzzleBase
 type Puzzle struct {
-	id            string
-	pieces        [][]*Piece
-	heldPieces    map[string]*Piece
-	size          int
-	piecesCorrect int
-	updates       []Update
-	lock          sync.Locker
-	cv            *sync.Cond
+	ID            string            `json:"id"`
+	Pieces        [][]*Piece        `json:"pieces"`
+	HeldPieces    map[string]*Piece `json:"held_pieces"`
+	Size          int               `json:"size"`
+	PiecesCorrect int               `json:"pieces_correct"`
+	NextUpdateID  int               `json:"next_update_id"`
+	XSize         int               `json:"x_size"`
+	YSize         int               `json:"y_size"`
+	LastUpdated   time.Time         `json:"last_updated"`
+	updates       chan<- *Update
 	users         UserPoolBase
 }
 
 // NewPuzzle creates the new puzzle from the file string of an image
-func NewPuzzle(file string, ySize int, xSize int) (*Puzzle, error) {
+func NewPuzzle(
+	file string,
+	ySize int,
+	xSize int,
+	updatesChannel chan<- *Update,
+	users UserPoolBase) *Puzzle {
 	pieceNames, err := picture.SliceImage(file, ySize, xSize)
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	puzzle := Puzzle{
-		id:            uuid.New().String(),
-		pieces:        make([][]*Piece, ySize),
-		heldPieces:    make(map[string]*Piece),
-		size:          ySize * xSize,
-		piecesCorrect: 0,
-		updates:       make([]Update, 0),
-		lock:          &sync.Mutex{},
-		cv:            sync.NewCond(&sync.Mutex{})}
 
-	for i := range puzzle.pieces {
-		puzzle.pieces[i] = make([]*Piece, xSize)
-		for j := range puzzle.pieces[i] {
-			puzzle.pieces[i][j] = &Piece{
+	puzzle := Puzzle{
+		ID:            uuid.New().String(),
+		Pieces:        make([][]*Piece, ySize),
+		HeldPieces:    make(map[string]*Piece),
+		Size:          ySize * xSize,
+		PiecesCorrect: 0,
+		NextUpdateID:  0,
+		LastUpdated:   time.Now(),
+		updates:       updatesChannel,
+		users:         users,
+		XSize:         xSize,
+		YSize:         ySize}
+
+	for i := range puzzle.Pieces {
+		puzzle.Pieces[i] = make([]*Piece, xSize)
+		for j := range puzzle.Pieces[i] {
+			puzzle.Pieces[i][j] = &Piece{
 				DestPos:  Position{Y: i, X: j},
 				CurrPos:  Position{Y: i, X: j},
 				ID:       i*xSize + j,
@@ -71,79 +80,51 @@ func NewPuzzle(file string, ySize int, xSize int) (*Puzzle, error) {
 	}
 	puzzle.Shuffle()
 
-	return &puzzle, nil
+	return &puzzle
+}
+
+// GetID returns id of puzzle for the interface
+func (p *Puzzle) GetID() string {
+	return p.ID
 }
 
 // Do does the request on the puzzle
-func (p *Puzzle) Do(r Request) bool {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	defer p.cv.Broadcast()
+func (p *Puzzle) Do(r Request) (bool, error) {
+	if r.PieceY >= p.YSize || r.PieceX >= p.XSize {
+		return false, fmt.Errorf("piece x and y out of bounds")
+	}
 
-	piece := p.pieces[r.PieceX][r.PieceY]
+	piece := p.Pieces[r.PieceX][r.PieceY]
+	reqUser := p.users.GetUser(r.UserID)
+	if reqUser == nil {
+		return false, fmt.Errorf("user not registered in pool")
+	}
 
 	if piece.Metadata.HeldBy != "" && piece.Metadata.HeldBy != r.UserID {
 		// piece is being held by someone else, no-op
-		return false
+		return false, nil
 	}
 
-	reqUser := p.users.GetUser(r.UserID)
-	if reqUser == nil {
-		// somehow, it is not in pool
-		return false
-	}
-
-	if p.heldPieces[r.UserID] == nil {
+	p.LastUpdated = time.Now()
+	if p.HeldPieces[r.UserID] == nil {
 		// hold, update held pieces
 		piece.Metadata.HeldBy = r.UserID
-		p.heldPieces[r.UserID] = piece
-		p.updates = append(
-			p.updates,
-			Update{Action: HOLD, UserID: r.UserID, Piece1ID: piece.ID})
-		return true
+		p.HeldPieces[r.UserID] = piece
+		p.updates <- p.newUpdate(HOLD, r.UserID, piece.ID, -1, 0)
+		return true, nil
 	}
 
 	// swap (or release if same as held piece)
-	otherPiece := p.heldPieces[r.UserID]
-	otherPiece.Metadata.HeldBy = ""
-	piece.Metadata.HeldBy = ""
+	otherPiece := p.HeldPieces[r.UserID]
 	delta := p.swap(piece, otherPiece)
-	p.piecesCorrect += delta
+	p.PiecesCorrect += delta
 
 	// update user stats
-	reqUser.PieceCount[p.id] = reqUser.PieceCount[p.id] + delta
+	reqUser.PieceCount[p.ID] = reqUser.PieceCount[p.ID] + delta
 	reqUser.LifetimePieces += delta
 
-	p.updates = append(
-		p.updates,
-		Update{
-			Action:   SWAP,
-			UserID:   r.UserID,
-			Piece1ID: piece.ID,
-			Piece2ID: otherPiece.ID,
-			Delta:    delta})
-	return true
-}
-
-// GetUpdateBatch blocking gets a batch of updates, up to num updates
-func (p *Puzzle) GetUpdateBatch(position int, batch int) []Update {
-	for position >= len(p.updates) {
-		p.cv.L.Lock()
-		p.cv.Wait()
-		p.cv.L.Unlock()
-	}
-	cutoff := min(len(p.updates), position+batch)
-	return p.updates[position:cutoff]
-}
-
-// GetUpdate blocking gets a single update
-func (p *Puzzle) GetUpdate(position int) Update {
-	for position >= len(p.updates) {
-		p.cv.L.Lock()
-		p.cv.Wait()
-		p.cv.L.Unlock()
-	}
-	return p.updates[position]
+	p.updates <- p.newUpdate(SWAP, r.UserID, piece.ID, otherPiece.ID, delta)
+	return true, nil
 }
 
 // Shuffle shuffles the puzzle
@@ -153,12 +134,12 @@ func (p *Puzzle) Shuffle() {
 
 // Complete returns if puzzle is finished
 func (p *Puzzle) Complete() bool {
-	return p.size == p.piecesCorrect
+	return p.Size == p.PiecesCorrect
 }
 
-// LastUpdated returns when the puzzle was last updated
-func (p *Puzzle) LastUpdated() time.Time {
-	return time.Now()
+// LastUpdatedTime returns when the puzzle was last updated
+func (p *Puzzle) LastUpdatedTime() time.Time {
+	return p.LastUpdated
 }
 
 // swap swaps piece1 and 2, and returns change in how many pieces are correct
@@ -172,11 +153,14 @@ func (p *Puzzle) swap(piece1 *Piece, piece2 *Piece) int {
 	}
 	piece2Pos := piece2.CurrPos
 	// changing puzzle state
-	p.pieces[piece2Pos.Y][piece2Pos.X] = piece1
-	p.pieces[piece1.CurrPos.Y][piece1.CurrPos.X] = piece2
+	p.Pieces[piece2Pos.Y][piece2Pos.X] = piece1
+	p.Pieces[piece1.CurrPos.Y][piece1.CurrPos.X] = piece2
 	// changing piece state
 	piece2.CurrPos = piece1.CurrPos
 	piece1.CurrPos = piece2Pos
+	// after they swap, they are no longer being held
+	piece1.Metadata.HeldBy = ""
+	piece2.Metadata.HeldBy = ""
 	if piece1.CurrPos.Equals(piece1.DestPos) {
 		delta++
 	}
@@ -184,4 +168,22 @@ func (p *Puzzle) swap(piece1 *Piece, piece2 *Piece) int {
 		delta++
 	}
 	return delta
+}
+
+// newUpdate creates an update for the puzzle
+func (p *Puzzle) newUpdate(
+	action action,
+	userID string,
+	piece1 int,
+	piece2 int,
+	delta int) *Update {
+	// follow the update id dictated by the puzzle
+	p.NextUpdateID++
+	return &Update{
+		ID:       p.NextUpdateID - 1,
+		Action:   action,
+		UserID:   userID,
+		Piece1ID: piece1,
+		Piece2ID: piece2,
+		Delta:    delta}
 }
