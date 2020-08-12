@@ -1,4 +1,4 @@
-package puzzle
+package game
 
 // Metadata contains all the information about a piece
 type Metadata struct {

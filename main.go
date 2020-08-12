@@ -9,22 +9,27 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/ilikerice123/puzzle/api"
+	"github.com/ilikerice123/puzzle/game"
 )
 
 func main() {
 	fmt.Println("Hello!!! serving traffic")
 	// picture.SliceImage("images/6bfdfa70-d02e-4ba7-a65b-b35627b22212/original.jpeg", 3, 4)
 
-	//make directory to store images
+	// make directory to store images
 	_, err := os.Stat("images")
 	if os.IsNotExist(err) {
 		err = os.Mkdir("images", 0666)
 	}
 
+	// init global constants
+	game.InitUserPool()
+	game.InitPuzzlePool()
+
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api").Subrouter()
-	imagesRouter := apiRouter.PathPrefix("/images").Subrouter()
-	api.RegisterImageRoutes(imagesRouter)
+	api.RegisterImagesRoutes(apiRouter)
+	api.RegisterUsersRoutes(apiRouter)
 
 	srv := &http.Server{
 		Handler: r,

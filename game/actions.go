@@ -1,4 +1,4 @@
-package puzzle
+package game
 
 type action int
 

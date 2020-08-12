@@ -10,12 +10,13 @@ import (
 	"github.com/ilikerice123/puzzle/picture"
 )
 
-// RegisterImageRoutes registers /api/images routers
-func RegisterImageRoutes(r *mux.Router) {
-	r.Methods("GET").Handler(
+// RegisterImagesRoutes registers /api/images routers
+func RegisterImagesRoutes(r *mux.Router) {
+	imagesRouter := r.PathPrefix("/images").Subrouter()
+	imagesRouter.Methods("GET").Handler(
 		http.StripPrefix("/api/", http.FileServer(http.Dir(""))))
-	r.HandleFunc("", UploadImage).Methods("POST")
-	r.HandleFunc("/", UploadImage).Methods("POST")
+	imagesRouter.HandleFunc("", UploadImage).Methods("POST")
+	imagesRouter.HandleFunc("/", UploadImage).Methods("POST")
 }
 
 // UploadImage uploads an image to a directory, and creates a preview

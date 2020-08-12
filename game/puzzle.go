@@ -1,4 +1,4 @@
-package puzzle
+package game
 
 import (
 	"sync"
@@ -39,8 +39,8 @@ type Puzzle struct {
 	piecesCorrect int
 	updates       []Update
 	lock          sync.Locker
-	// used for broadcasting to updates
-	cv *sync.Cond
+	cv            *sync.Cond
+	users         UserPoolBase
 }
 
 // NewPuzzle creates the new puzzle from the file string of an image
@@ -87,6 +87,12 @@ func (p *Puzzle) Do(r Request) bool {
 		return false
 	}
 
+	reqUser := p.users.GetUser(r.UserID)
+	if reqUser == nil {
+		// somehow, it is not in pool
+		return false
+	}
+
 	if p.heldPieces[r.UserID] == nil {
 		// hold, update held pieces
 		piece.Metadata.HeldBy = r.UserID
@@ -104,6 +110,10 @@ func (p *Puzzle) Do(r Request) bool {
 	delta := p.swap(piece, otherPiece)
 	p.piecesCorrect += delta
 
+	// update user stats
+	reqUser.PieceCount[p.id] = reqUser.PieceCount[p.id] + delta
+	reqUser.LifetimePieces += delta
+
 	p.updates = append(
 		p.updates,
 		Update{
@@ -111,8 +121,7 @@ func (p *Puzzle) Do(r Request) bool {
 			UserID:   r.UserID,
 			Piece1ID: piece.ID,
 			Piece2ID: otherPiece.ID,
-			Delta:    delta,
-		})
+			Delta:    delta})
 	return true
 }
 
