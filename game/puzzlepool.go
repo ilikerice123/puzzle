@@ -6,6 +6,8 @@ import "fmt"
 type PuzzlePoolBase interface {
 	AddPuzzle(LivePuzzleBase)
 
+	GetPuzzle(id string) LivePuzzleBase
+
 	AddRequest(string, Request) error
 
 	AddCallback(string, func(*Update)) error
@@ -28,6 +30,11 @@ func InitPuzzlePool() {
 // AddPuzzle adds a puzzle to the pool
 func (p *PuzzlePool) AddPuzzle(l LivePuzzleBase) {
 	p.puzzles[l.ID()] = l
+}
+
+// GetPuzzle gets a puzzle from the pool
+func (p *PuzzlePool) GetPuzzle(id string) LivePuzzleBase {
+	return p.puzzles[id]
 }
 
 // AddRequest adds a web request to be processed by the workers
