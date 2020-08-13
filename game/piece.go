@@ -1,11 +1,5 @@
 package game
 
-// Metadata contains all the information about a piece
-type Metadata struct {
-	ImgURL string
-	HeldBy string
-}
-
 // Position represents a 2d position on the puzzle
 type Position struct {
 	X, Y int
@@ -13,10 +7,11 @@ type Position struct {
 
 // Piece represents a single puzzle piece
 type Piece struct {
-	DestPos  Position
-	CurrPos  Position
-	ID       int
-	Metadata Metadata
+	DestPos   Position
+	CurrPos   Position
+	ID        int
+	ImageFile string
+	HeldBy    string
 }
 
 // Equals compares different positions

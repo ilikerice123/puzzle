@@ -15,7 +15,7 @@ type LivePuzzleBase interface {
 
 // LivePuzzle implements the LivePuzzleBase interface
 type LivePuzzle struct {
-	puzzle PuzzleBase
+	Puzzle PuzzleBase
 
 	requests     chan *Request
 	updates      chan *Update
@@ -36,7 +36,7 @@ func NewLivePuzzle(
 	}
 
 	return &LivePuzzle{
-		puzzle:       p,
+		Puzzle:       p,
 		requests:     make(chan *Request),
 		updates:      updates,
 		callbacks:    make([]func(*Update), 0),
@@ -45,7 +45,7 @@ func NewLivePuzzle(
 
 // ID returns the id of the puzzle
 func (p *LivePuzzle) ID() string {
-	return p.puzzle.GetID()
+	return p.Puzzle.GetID()
 }
 
 // AddRequest adds a request to the LivePuzzle
@@ -65,7 +65,7 @@ func (p *LivePuzzle) Start() {
 	// goroutine to process requests
 	go func() {
 		for req := range p.requests {
-			p.puzzle.Do(*req)
+			p.Puzzle.Do(*req)
 		}
 	}()
 	// goroutine to send updates

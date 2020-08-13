@@ -2,20 +2,23 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/ilikerice123/puzzle/fs"
 	"github.com/ilikerice123/puzzle/game"
 )
 
 // RegisterPuzzlesRoutes registers /api/images routers
 func RegisterPuzzlesRoutes(r *mux.Router) {
-	usersRouter := r.PathPrefix("/puzzles").Subrouter()
-	usersRouter.HandleFunc("/{id}", GetPuzzle).Methods("GET")
-	usersRouter.HandleFunc("/{id}/", GetPuzzle).Methods("GET")
-	usersRouter.HandleFunc("/{id}", CreatePuzzle).Methods("POST")
-	usersRouter.HandleFunc("/{id}/", CreatePuzzle).Methods("POST")
+	puzzlesRouter := r.PathPrefix("/puzzles").Subrouter()
+	puzzlesRouter.HandleFunc("/{id}/ws", UpgradePuzzle)
+	puzzlesRouter.HandleFunc("/{id}", GetPuzzle).Methods("GET")
+	puzzlesRouter.HandleFunc("/{id}/", GetPuzzle).Methods("GET")
+	puzzlesRouter.HandleFunc("/{id}", CreatePuzzle).Methods("POST")
+	puzzlesRouter.HandleFunc("/{id}/", CreatePuzzle).Methods("POST")
 }
 
 // GetPuzzle gets current puzzle's state
@@ -57,4 +60,40 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	WriteSuccess(w, map[string]string{"id": id})
+}
+
+// UpgradePuzzle creates puzzle
+func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	puzzle := game.GlobalPuzzlePool.GetPuzzle(id)
+	if puzzle != nil {
+		WriteError(w, 404, map[string]string{"error": "puzzle does not exist"})
+	}
+	log.Println("trying to connect and upgrade!")
+	conn, err := WebsocketUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	conn.WriteMessage(websocket.TextMessage, []byte(id))
+
+}
+
+func setUpConnection(c *websocket.Conn, p game.LivePuzzleBase) {
+	for {
+		messageType, p, err := c.ReadMessage()
+		if messageType == websocket.BinaryMessage {
+			log.Println("binary message!")
+		} else {
+			log.Println("text message!")
+		}
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if err := c.WriteMessage(messageType, p); err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }

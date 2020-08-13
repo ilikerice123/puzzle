@@ -25,9 +25,10 @@ func main() {
 		}
 	}
 
-	// init global constants
+	// init global pools and websocket upgrader
 	game.InitUserPool()
 	game.InitPuzzlePool()
+	api.InitUpgrader()
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api").Subrouter()
