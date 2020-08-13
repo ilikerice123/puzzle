@@ -6,7 +6,7 @@ import "sync"
 type LivePuzzleBase interface {
 	Start()
 
-	AddRequest(Request)
+	AddRequest(*Request)
 
 	AddCallback(func(*Update))
 
@@ -49,8 +49,8 @@ func (p *LivePuzzle) ID() string {
 }
 
 // AddRequest adds a request to the LivePuzzle
-func (p *LivePuzzle) AddRequest(r Request) {
-	p.requests <- &r
+func (p *LivePuzzle) AddRequest(r *Request) {
+	p.requests <- r
 }
 
 // AddCallback registers a function callback

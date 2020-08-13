@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -64,36 +65,59 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 
 // UpgradePuzzle creates puzzle
 func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("user")
+	if userID == "" {
+		WriteError(w, 404, map[string]string{"error": "user parameter not supplied"})
+		return
+	}
+
 	id := mux.Vars(r)["id"]
 	puzzle := game.GlobalPuzzlePool.GetPuzzle(id)
 	if puzzle != nil {
 		WriteError(w, 404, map[string]string{"error": "puzzle does not exist"})
+		return
 	}
+
 	log.Println("trying to connect and upgrade!")
 	conn, err := WebsocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-	conn.WriteMessage(websocket.TextMessage, []byte(id))
-
+	go setupConnection(conn, puzzle, userID)
 }
 
-func setUpConnection(c *websocket.Conn, p game.LivePuzzleBase) {
-	for {
-		messageType, p, err := c.ReadMessage()
-		if messageType == websocket.BinaryMessage {
-			log.Println("binary message!")
-		} else {
-			log.Println("text message!")
-		}
+// setupConnection connects all the pipelines and channels together
+func setupConnection(c *websocket.Conn, p game.LivePuzzleBase, userID string) {
+	defer c.Close()
+	// set up heartbeats
+	c.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.SetPongHandler(func(string) error {
+		c.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	// pushing updates path
+	p.AddCallback(func(u *game.Update) {
+		serializedUpdate, err := json.Marshal(u)
 		if err != nil {
+			return
+		}
+		c.WriteMessage(websocket.TextMessage, serializedUpdate)
+	})
+
+	p.AddRequest(&game.Request{Action: game.JOIN, UserID: userID})
+	// wire up connections first, then send join message, so we also get connected message
+	for {
+		msgType, msg, err := c.ReadMessage()
+		if err != nil || msgType != websocket.TextMessage {
 			log.Println(err)
 			return
 		}
-		if err := c.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
+		var r game.Request
+		if err := json.Unmarshal(msg, &r); err != nil {
+			continue
 		}
+		p.AddRequest(&r)
 	}
 }

@@ -8,13 +8,6 @@ import (
 	"github.com/ilikerice123/puzzle/picture"
 )
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // PuzzleBase is an interface for the base Puzzle object
 type PuzzleBase interface {
 	Do(r Request) error
