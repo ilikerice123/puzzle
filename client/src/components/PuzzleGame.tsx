@@ -1,18 +1,18 @@
 import React from 'react';
 import PuzzleClient from './client'
 import { RouteComponentProps, withRouter } from "react-router-dom";
-import { PuzzleGame, PuzzlePiece } from './game';
+import { PuzzleObject, PuzzlePieceObject } from './game';
 import * as CSS from 'csstype';
 import { debounce } from 'ts-debounce';
 import Piece from './Piece';
 
 // also servers as the interface for 'this.props.match.params'
-interface PuzzleGameProps extends PuzzleGame{
-    
+interface PuzzleGameProps {
+    puzzle: PuzzleObject
 }
 
 type PuzzleGameState = {
-    puzzle?: PuzzleGame
+    puzzle: PuzzleObject
     maxPieceHeight: number
     maxPieceWidth: number
 }
@@ -29,7 +29,7 @@ export default class PuzzleGameComponent extends React.Component<PuzzleGameProps
     constructor(props: PuzzleGameProps) {
         super(props);
         let {maxHeight, maxWidth} = this.getPieceLimits()
-        this.state = {puzzle: props, maxPieceHeight: maxHeight, maxPieceWidth: maxWidth}
+        this.state = {puzzle: props.puzzle, maxPieceHeight: maxHeight, maxPieceWidth: maxWidth}
     }
     
     componentDidMount() {
@@ -51,7 +51,7 @@ export default class PuzzleGameComponent extends React.Component<PuzzleGameProps
     getPieceLimits(): PieceLimits {
         let width = window.innerWidth
         let height = window.innerHeight
-        return {maxHeight: height/this.props.ySize, maxWidth: width/this.props.xSize}
+        return {maxHeight: height/this.props.puzzle.ySize, maxWidth: width/this.props.puzzle.xSize}
     }
 
     render() {
@@ -65,10 +65,10 @@ export default class PuzzleGameComponent extends React.Component<PuzzleGameProps
             <div>
                 {this.state.puzzle != null && (
                     <table>
-                        {this.state.puzzle.pieces.map((row: PuzzlePiece[]) => {
+                        {this.state.puzzle.pieces.map((row: PuzzlePieceObject[]) => {
                             return (
                                 <tr>
-                                    {row.map((piece: PuzzlePiece) => {
+                                    {row.map((piece: PuzzlePieceObject) => {
                                         return (
                                             <td>
                                                 <Piece 

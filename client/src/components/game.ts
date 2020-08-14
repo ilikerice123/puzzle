@@ -4,9 +4,9 @@ type Pos = {
     Y: number
 }
 
-export interface PuzzleGame {
+export interface PuzzleObject {
     id: string
-    pieces: PuzzlePiece[][]
+    pieces: PuzzlePieceObject[][]
     heldPieces: Map<string, string>
     size: number
     piecesCorrect: number
@@ -14,17 +14,17 @@ export interface PuzzleGame {
     xSize: number
     ySize: number
     lastUpdated: string
-    currentUsers: Map<string, PuzzleUser>
+    currentUsers: Map<string, UserObject>
 }
 
-export interface PuzzleUser {
+export interface UserObject {
     id: string
     name: string
     created: string
     lifetimePieces: number
 }
 
-export interface PuzzlePiece {
+export interface PuzzlePieceObject {
     currPos: Pos
     image: string
     heldBy: string

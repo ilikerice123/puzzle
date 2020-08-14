@@ -3,7 +3,7 @@ import PuzzleClient from './client'
 import { RouteComponentProps, withRouter } from "react-router-dom"
 import PuzzleGameComponent from './PuzzleGame' 
 import { timingSafeEqual } from 'crypto';
-import { PuzzleGame } from './game';
+import { PuzzleObject } from './game';
 
 // also servers as the interface for 'this.props.match.params'
 type PuzzleProps = {
@@ -11,7 +11,7 @@ type PuzzleProps = {
 }
 
 type PuzzleState = {
-    puzzle?: PuzzleGame
+    puzzle?: PuzzleObject
 }
 
 class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
@@ -23,7 +23,7 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
     }
 
     async componentDidMount() {
-        let res = await this.client.get<PuzzleGame>(`/puzzles/${this.props.id}`)
+        let res = await this.client.get<PuzzleObject>(`/puzzles/${this.props.id}`)
         if (res == null || res.status != 200) {
             console.log("error occurred!")
             return
@@ -36,7 +36,7 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
             <div>
                 <p>Puzzle:</p>
                 <pre>{JSON.stringify(this.state.puzzle, null, 4)}</pre>
-                {this.state.puzzle != null && <PuzzleGameComponent {...this.state.puzzle}/>}
+                {this.state.puzzle != null && <PuzzleGameComponent puzzle={this.state.puzzle}/>}
             </div>
         )
     }
