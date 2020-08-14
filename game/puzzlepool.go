@@ -21,8 +21,8 @@ func InitPuzzlePool() {
 }
 
 // AddPuzzle adds a puzzle to the pool
-func (p *PuzzlePool) AddPuzzle(l LivePuzzleBase) {
-	p.puzzles[l.ID()] = l
+func (p *PuzzlePool) AddPuzzle(puzzle LivePuzzleBase) {
+	p.puzzles[puzzle.ID()] = puzzle
 }
 
 // GetPuzzle gets a puzzle from the pool

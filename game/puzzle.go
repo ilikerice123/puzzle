@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/ilikerice123/puzzle/picture"
 )
 
@@ -25,20 +24,21 @@ type PuzzleBase interface {
 type Puzzle struct {
 	ID            string            `json:"id"`
 	Pieces        [][]*Piece        `json:"pieces"`
-	HeldPieces    map[string]*Piece `json:"held_pieces"`
+	HeldPieces    map[string]*Piece `json:"heldPieces"`
 	Size          int               `json:"size"`
-	PiecesCorrect int               `json:"pieces_correct"`
-	NextUpdateID  int               `json:"next_update_id"`
-	XSize         int               `json:"x_size"`
-	YSize         int               `json:"y_size"`
-	LastUpdated   time.Time         `json:"last_updated"`
-	CurrentUsers  map[string]*User  `json:"current_users"`
+	PiecesCorrect int               `json:"piecesCorrect"`
+	NextUpdateID  int               `json:"nextUpdateID"`
+	XSize         int               `json:"xSize"`
+	YSize         int               `json:"ySize"`
+	LastUpdated   time.Time         `json:"lastUpdated"`
+	CurrentUsers  map[string]*User  `json:"currentUsers"`
 	updates       chan<- *Update
 	users         UserPoolBase
 }
 
 // NewPuzzle creates the new puzzle from the file string of an image
 func NewPuzzle(
+	id string,
 	file string,
 	ySize int,
 	xSize int,
@@ -50,13 +50,14 @@ func NewPuzzle(
 	}
 
 	puzzle := Puzzle{
-		ID:            uuid.New().String(),
+		ID:            id,
 		Pieces:        make([][]*Piece, ySize),
 		HeldPieces:    make(map[string]*Piece),
 		Size:          ySize * xSize,
 		PiecesCorrect: 0,
 		NextUpdateID:  0,
 		LastUpdated:   time.Now(),
+		CurrentUsers:  make(map[string]*User),
 		updates:       updatesChannel,
 		users:         users,
 		XSize:         xSize,

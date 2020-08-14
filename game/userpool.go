@@ -27,7 +27,7 @@ type User struct {
 	Name           string         `json:"name"`
 	Created        time.Time      `json:"created"`
 	PieceCount     map[string]int `json:"-"`
-	LifetimePieces int            `json:"lifetime_pieces"`
+	LifetimePieces int            `json:"lifetimePieces"`
 }
 
 // InitUserPool assigns value to globalUserPool

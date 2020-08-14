@@ -13,9 +13,9 @@ const (
 // Request representing a request to move something
 type Request struct {
 	Action action `json:"action"`
-	UserID string `json:"user_id"`
-	PieceX int    `json:"piece_x"`
-	PieceY int    `json:"piece_y"`
+	UserID string `json:"userID"`
+	PieceX int    `json:"pieceX"`
+	PieceY int    `json:"pieceY"`
 }
 
 // Update representing a state change of the puzzle
@@ -27,8 +27,8 @@ type Request struct {
 type Update struct {
 	ID       int    `json:"id"`
 	Action   action `json:"action"`
-	UserID   string `json:"user_id"`
-	Piece1ID int    `json:"piece1_id"`
-	Piece2ID int    `json:"piece2_id"`
+	UserID   string `json:"userID"`
+	Piece1ID int    `json:"piece1ID"`
+	Piece2ID int    `json:"piece2ID"`
 	Delta    int    `json:"delta"`
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ilikerice123/puzzle/api"
 	"github.com/ilikerice123/puzzle/fs"
 	"github.com/ilikerice123/puzzle/game"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -36,8 +37,12 @@ func main() {
 	api.RegisterUsersRoutes(apiRouter)
 	api.RegisterPuzzlesRoutes(apiRouter)
 
+	router := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowCredentials: true}).Handler(r)
+
 	srv := &http.Server{
-		Handler: r,
+		Handler: router,
 		Addr:    ":8000",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 24 * time.Hour,

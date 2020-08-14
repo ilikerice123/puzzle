@@ -7,11 +7,11 @@ type Position struct {
 
 // Piece represents a single puzzle piece
 type Piece struct {
-	DestPos   Position
-	CurrPos   Position
-	ID        int
-	ImageFile string
-	HeldBy    string
+	DestPos   Position `json:"-"`
+	CurrPos   Position `json:"currPos"`
+	ID        int      `json:"-"`
+	ImageFile string   `json:"image"`
+	HeldBy    string   `json:"heldBy"`
 }
 
 // Equals compares different positions

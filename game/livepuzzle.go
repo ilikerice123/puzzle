@@ -25,12 +25,13 @@ type LivePuzzle struct {
 
 // NewLivePuzzle creates new live puzzle
 func NewLivePuzzle(
+	id string,
 	file string,
 	ySize int,
 	xSize int,
 	users UserPoolBase) *LivePuzzle {
 	updates := make(chan *Update)
-	p := NewPuzzle(file, ySize, xSize, updates, users)
+	p := NewPuzzle(id, file, ySize, xSize, updates, users)
 	if p == nil {
 		return nil
 	}

@@ -48,13 +48,14 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, 422, map[string]string{"error": "invalid id provided"})
 	}
 
-	ySize := userInfo["y_size"]
-	xSize := userInfo["x_size"]
+	ySize := userInfo["ySize"]
+	xSize := userInfo["xSize"]
 	if ySize <= 0 || xSize <= 0 {
-		WriteError(w, 422, map[string]string{"error": "invalid x_size and y_size provided"})
+		WriteError(w, 422, map[string]string{"error": "invalid xSize and ySize provided"})
 		return
 	}
-	puzzle := game.NewLivePuzzle(pictureFile, ySize, xSize, game.GlobalUserPool)
+	puzzle := game.NewLivePuzzle(id, pictureFile, ySize, xSize, game.GlobalUserPool)
+	puzzle.Start()
 	game.GlobalPuzzlePool.AddPuzzle(puzzle)
 	if puzzle == nil {
 		WriteError(w, 500, map[string]string{"error": "error creating puzzle"})
@@ -63,7 +64,7 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 	WriteSuccess(w, map[string]string{"id": id})
 }
 
-// UpgradePuzzle creates puzzle
+// UpgradePuzzle creates puzzle socket
 func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("user")
 	if userID == "" {
