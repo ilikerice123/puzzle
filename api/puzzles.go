@@ -51,7 +51,7 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 
 	ySize := userInfo["ySize"]
 	xSize := userInfo["xSize"]
-	if ySize <= 0 || xSize <= 0 {
+	if ySize <= 0 || xSize <= 0 || xSize*ySize > 10000 {
 		WriteError(w, 422, map[string]string{"error": "invalid xSize and ySize provided"})
 		return
 	}
