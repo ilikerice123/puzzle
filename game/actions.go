@@ -12,10 +12,9 @@ const (
 
 // Request representing a request to move something
 type Request struct {
-	Action action `json:"action"`
-	UserID string `json:"userID"`
-	PieceX int    `json:"pieceX"`
-	PieceY int    `json:"pieceY"`
+	Action   action   `json:"action"`
+	UserID   string   `json:"userID"`
+	PiecePos Position `json:"position"`
 }
 
 // Update representing a state change of the puzzle
@@ -25,10 +24,10 @@ type Request struct {
 // - if Action is a HOLD, piece1ID and userID are populated
 // - if Action is a JOIN or LEAVE, only userID is populated
 type Update struct {
-	ID       int    `json:"id"`
-	Action   action `json:"action"`
-	UserID   string `json:"userID"`
-	Piece1ID int    `json:"piece1ID"`
-	Piece2ID int    `json:"piece2ID"`
-	Delta    int    `json:"delta"`
+	ID        int      `json:"id"`
+	Action    action   `json:"action"`
+	UserID    string   `json:"userID"`
+	Piece1Pos Position `json:"piece1Pos"`
+	Piece2Pos Position `json:"piece2Pos"`
+	Delta     int      `json:"delta"`
 }

@@ -2,7 +2,10 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
+
+	"github.com/ilikerice123/puzzle/fs"
 
 	"github.com/ilikerice123/puzzle/picture"
 )
@@ -18,6 +21,8 @@ type PuzzleBase interface {
 	LastUpdatedTime() time.Time
 
 	GetID() string
+
+	Results() map[string]int
 }
 
 // Puzzle representing a non-threadsafe puzzle objec that implements PuzzleBase
@@ -30,6 +35,8 @@ type Puzzle struct {
 	NextUpdateID  int               `json:"nextUpdateID"`
 	XSize         int               `json:"xSize"`
 	YSize         int               `json:"ySize"`
+	ImageWidth    int               `json:"imageWidth"`
+	ImageHeight   int               `json:"imageHeight"`
 	LastUpdated   time.Time         `json:"lastUpdated"`
 	CurrentUsers  map[string]*User  `json:"currentUsers"`
 	updates       chan<- *Update
@@ -49,6 +56,10 @@ func NewPuzzle(
 		return nil
 	}
 
+	// duplicate call to normalizeImage and loadImage just to get the dimensions
+	image, _ := fs.LoadImage(file)
+	imageWidth, imageHeight := picture.NormalizeImage(image, ySize, xSize)
+
 	puzzle := Puzzle{
 		ID:            id,
 		Pieces:        make([][]*Piece, ySize),
@@ -61,7 +72,10 @@ func NewPuzzle(
 		updates:       updatesChannel,
 		users:         users,
 		XSize:         xSize,
-		YSize:         ySize}
+		YSize:         ySize,
+		ImageWidth:    imageWidth,
+		ImageHeight:   imageHeight,
+	}
 
 	for i := range puzzle.Pieces {
 		puzzle.Pieces[i] = make([]*Piece, xSize)
@@ -86,6 +100,10 @@ func (p *Puzzle) GetID() string {
 
 // Do does the request on the puzzle
 func (p *Puzzle) Do(r Request) error {
+	if p.PiecesCorrect == p.Size {
+		return fmt.Errorf("puzzle complete")
+	}
+
 	switch r.Action {
 	case HOLD:
 		return p.hold(r)
@@ -99,9 +117,30 @@ func (p *Puzzle) Do(r Request) error {
 	}
 }
 
-// Shuffle shuffles the puzzle
+// Shuffle shuffles the puzzle based on Fisher–Yates shuffle, modified so
+// piecesCorrect == 0 every time
 func (p *Puzzle) Shuffle() {
+	for i := range p.Pieces {
+		for j := range p.Pieces[i] {
+			if i == len(p.Pieces)-1 && j == len(p.Pieces[i])-1 {
+				return
+			}
+			currIdx := i*(p.XSize) + j
+			idx := rand.Intn((p.Size)-currIdx-1) + currIdx + 1
 
+			// log.Printf("swapping (%d,%d) with (%d,%d)\n", i, j, k, l)
+			p.swap(p.Pieces[i][j], p.Pieces[idx/p.XSize][idx%p.XSize])
+		}
+	}
+}
+
+// Results returns the results of the puzzle
+func (p *Puzzle) Results() map[string]int {
+	results := make(map[string]int)
+	for userID, user := range p.CurrentUsers {
+		results[userID] = user.PieceCount[p.ID]
+	}
+	return results
 }
 
 // Complete returns if puzzle is finished
@@ -115,7 +154,7 @@ func (p *Puzzle) LastUpdatedTime() time.Time {
 }
 
 func (p *Puzzle) hold(r Request) error {
-	if r.PieceY >= p.YSize || r.PieceX >= p.XSize {
+	if r.PiecePos.Y >= p.YSize || r.PiecePos.X >= p.XSize {
 		return fmt.Errorf("piece x and y out of bounds")
 	}
 	reqUser, exists := p.CurrentUsers[r.UserID]
@@ -123,7 +162,7 @@ func (p *Puzzle) hold(r Request) error {
 		return fmt.Errorf("puzzle's current users doesn't include user id")
 	}
 
-	piece := p.Pieces[r.PieceX][r.PieceY]
+	piece := p.Pieces[r.PiecePos.Y][r.PiecePos.X]
 	if piece.HeldBy != "" && piece.HeldBy != r.UserID {
 		// piece is being held by someone else, no-op
 		return nil
@@ -134,20 +173,23 @@ func (p *Puzzle) hold(r Request) error {
 		// hold, update held pieces
 		piece.HeldBy = r.UserID
 		p.HeldPieces[r.UserID] = piece
-		p.updates <- p.newUpdate(HOLD, r.UserID, piece.ID, -1, 0)
+		p.updates <- p.newUpdate(HOLD, r.UserID, piece.CurrPos, Position{}, 0)
 		return nil
 	}
 
-	// swap (or release if same as held piece)
 	otherPiece := p.HeldPieces[r.UserID]
 	delta := p.swap(piece, otherPiece)
+	// swap (or release if same as held piece)
+	// TODO: this logic should be moved to swap
+	// needs to be after swap for some reason, or else the pointer is gone? what?
+	delete(p.HeldPieces, r.UserID)
 	p.PiecesCorrect += delta
 
 	// update user stats
 	reqUser.PieceCount[p.ID] = reqUser.PieceCount[p.ID] + delta
 	reqUser.LifetimePieces += delta
 
-	p.updates <- p.newUpdate(SWAP, r.UserID, piece.ID, otherPiece.ID, delta)
+	p.updates <- p.newUpdate(SWAP, r.UserID, piece.CurrPos, otherPiece.CurrPos, delta)
 	return nil
 }
 
@@ -162,14 +204,14 @@ func (p *Puzzle) addUser(id string) error {
 		return fmt.Errorf("user already exists")
 	}
 	p.CurrentUsers[u.ID] = u
-	p.updates <- p.newUpdate(JOIN, id, 0, 0, 0)
+	p.updates <- p.newUpdate(JOIN, id, Position{}, Position{}, 0)
 	return nil
 }
 
 // removeUser removes a user from current users
 func (p *Puzzle) removeUser(id string) {
 	delete(p.CurrentUsers, id)
-	p.updates <- p.newUpdate(LEAVE, id, 0, 0, 0)
+	p.updates <- p.newUpdate(LEAVE, id, Position{}, Position{}, 0)
 }
 
 // swap swaps piece1 and 2, and returns change in how many pieces are correct
@@ -191,6 +233,7 @@ func (p *Puzzle) swap(piece1 *Piece, piece2 *Piece) int {
 	// after they swap, they are no longer being held
 	piece1.HeldBy = ""
 	piece2.HeldBy = ""
+
 	if piece1.CurrPos.Equals(piece1.DestPos) {
 		delta++
 	}
@@ -204,16 +247,16 @@ func (p *Puzzle) swap(piece1 *Piece, piece2 *Piece) int {
 func (p *Puzzle) newUpdate(
 	action action,
 	userID string,
-	piece1 int,
-	piece2 int,
+	piece1 Position,
+	piece2 Position,
 	delta int) *Update {
 	// follow the update id dictated by the puzzle
 	p.NextUpdateID++
 	return &Update{
-		ID:       p.NextUpdateID - 1,
-		Action:   action,
-		UserID:   userID,
-		Piece1ID: piece1,
-		Piece2ID: piece2,
-		Delta:    delta}
+		ID:        p.NextUpdateID - 1,
+		Action:    action,
+		UserID:    userID,
+		Piece1Pos: piece1,
+		Piece2Pos: piece2,
+		Delta:     delta}
 }

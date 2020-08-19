@@ -1,17 +1,24 @@
 import React from 'react';
-import { PuzzlePiece } from './game';
+import { PuzzlePieceObject, Pos } from './game';
 import * as CSS from 'csstype';
 
 type PieceProps = {
-    piece: PuzzlePiece
+    piece: PuzzlePieceObject
     host: string
     styles: CSS.Properties
+    onClick: (pos: Pos) => any
 }
 
-export default function Piece(props: PieceProps) {
+export default function PieceComponent(props: PieceProps) {
     return (
         <div>
-            <img style={props.styles} src={`${props.host}/${props.piece.image}`} alt="" />
+            <img 
+                draggable={false}
+                style={props.styles} 
+                src={`${props.host}/${props.piece.image}`} 
+                alt=""
+                onClick={() => props.onClick(props.piece.currPos)}
+                />
         </div>
     )
 }

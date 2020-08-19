@@ -2,13 +2,24 @@ import axios, { AxiosResponse } from 'axios'
 
 export default class PuzzleClient {
     serverHost: string
+    socketHost: string
 
     constructor(){
         this.serverHost = GetHost()
+        if (this.serverHost.includes("localhost")){
+            this.socketHost = this.serverHost.replace("http", "ws")
+        } else {
+            throw new Error("unimplemented")
+        }
     }
 
     host(): string {
         return this.serverHost
+    }
+
+    websocket(url: string): WebSocket {
+        let socket = new WebSocket(`${this.socketHost}${url}`)
+        return socket
     }
 
     // awaitable that doesn't throw

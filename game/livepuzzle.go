@@ -11,6 +11,8 @@ type LivePuzzleBase interface {
 	AddCallback(func(*Update))
 
 	ID() string
+
+	Results() map[string]int
 }
 
 // LivePuzzle implements the LivePuzzleBase interface
@@ -47,6 +49,11 @@ func NewLivePuzzle(
 // ID returns the id of the puzzle
 func (p *LivePuzzle) ID() string {
 	return p.Puzzle.GetID()
+}
+
+// Results returns the results of the puzzle
+func (p *LivePuzzle) Results() map[string]int {
+	return p.Puzzle.Results()
 }
 
 // AddRequest adds a request to the LivePuzzle

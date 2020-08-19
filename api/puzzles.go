@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -20,6 +19,8 @@ func RegisterPuzzlesRoutes(r *mux.Router) {
 	puzzlesRouter.HandleFunc("/{id}/", GetPuzzle).Methods("GET")
 	puzzlesRouter.HandleFunc("/{id}", CreatePuzzle).Methods("POST")
 	puzzlesRouter.HandleFunc("/{id}/", CreatePuzzle).Methods("POST")
+	puzzlesRouter.HandleFunc("/{id}/results", GetPuzzleResults).Methods("GET")
+	puzzlesRouter.HandleFunc("/{id}/results/", GetPuzzleResults).Methods("GET")
 }
 
 // GetPuzzle gets current puzzle's state
@@ -64,17 +65,30 @@ func CreatePuzzle(w http.ResponseWriter, r *http.Request) {
 	WriteSuccess(w, map[string]string{"id": id})
 }
 
+// GetPuzzleResults gets the results of a puzzle
+func GetPuzzleResults(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	puzzle := game.GlobalPuzzlePool.GetPuzzle(id)
+	if puzzle != nil {
+		WriteSuccess(w, puzzle.Results())
+		return
+	}
+	WriteError(w, 404, map[string]string{"error": "puzzle not found"})
+}
+
 // UpgradePuzzle creates puzzle socket
 func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("user")
 	if userID == "" {
+		log.Println("user id")
 		WriteError(w, 404, map[string]string{"error": "user parameter not supplied"})
 		return
 	}
 
 	id := mux.Vars(r)["id"]
 	puzzle := game.GlobalPuzzlePool.GetPuzzle(id)
-	if puzzle != nil {
+	if puzzle == nil {
+		log.Println("puzzle does not exist")
 		WriteError(w, 404, map[string]string{"error": "puzzle does not exist"})
 		return
 	}
@@ -83,6 +97,7 @@ func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
 	conn, err := WebsocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
+		WriteError(w, 500, map[string]string{"error": "error upgrading websocket"})
 		return
 	}
 	go setupConnection(conn, puzzle, userID)
@@ -91,12 +106,6 @@ func UpgradePuzzle(w http.ResponseWriter, r *http.Request) {
 // setupConnection connects all the pipelines and channels together
 func setupConnection(c *websocket.Conn, p game.LivePuzzleBase, userID string) {
 	defer c.Close()
-	// set up heartbeats
-	c.SetReadDeadline(time.Now().Add(60 * time.Second))
-	c.SetPongHandler(func(string) error {
-		c.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
 
 	// pushing updates path
 	p.AddCallback(func(u *game.Update) {
@@ -113,6 +122,7 @@ func setupConnection(c *websocket.Conn, p game.LivePuzzleBase, userID string) {
 		msgType, msg, err := c.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
 			log.Println(err)
+			p.AddRequest(&game.Request{Action: game.LEAVE, UserID: userID})
 			return
 		}
 		var r game.Request

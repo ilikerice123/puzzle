@@ -1,0 +1,88 @@
+$t: 1.5s;
+
+.dot-1 {	
+	background: black;
+	
+	&, &:after {
+		display: inline-block;
+		width: 2em; height: 2em;
+		border-radius: 50%;
+		animation: a $t calc(((1 + var(--o, 0))/5 - 1)*#{$t}) infinite
+	}
+	
+	&:after {
+		--o: 1;
+		background: currentcolor;
+		content: ''
+	}
+}
+
+.dot-2 {	
+	background: black;
+	
+	&, &:after {
+		display: inline-block;
+		width: 2em; height: 2em;
+		border-radius: 50%;
+		animation: a $t calc(((2 + var(--o, 0))/5 - 1)*#{$t}) infinite
+	}
+	
+	&:after {
+		--o: 1;
+		background: currentcolor;
+		content: ''
+	}
+}
+
+.dot-3 {	
+	background: black;
+	
+	&, &:after {
+		display: inline-block;
+		width: 2em; height: 2em;
+		border-radius: 50%;
+		animation: a $t calc(((3 + var(--o, 0))/5 - 1)*#{$t}) infinite
+	}
+	
+	&:after {
+		--o: 1;
+		background: currentcolor;
+		content: ''
+	}
+}
+
+.dot-4 {	
+	background: black;
+	
+	&, &:after {
+		display: inline-block;
+		width: 2em; height: 2em;
+		border-radius: 50%;
+		animation: a $t calc(((4 + var(--o, 0))/5 - 1)*#{$t}) infinite
+	}
+	
+	&:after {
+		--o: 1;
+		background: currentcolor;
+		content: ''
+	}
+}
+
+.dot-5 {	
+	background: black;
+	
+	&, &:after {
+		display: inline-block;
+		width: 2em; height: 2em;
+		border-radius: 50%;
+		animation: a $t calc(((5 + var(--o, 0))/5 - 1)*#{$t}) infinite
+	}
+	
+	&:after {
+		--o: 1;
+		background: white;
+		content: ''
+	}
+}
+
+@keyframes a { 0%, 50% { transform: scale(0) } }

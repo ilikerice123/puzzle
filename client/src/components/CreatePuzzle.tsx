@@ -1,7 +1,7 @@
 import React from 'react';
 import PuzzleClient from './client'
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-
+import Loading from './Loading'
 interface CreatePuzzleProps extends RouteComponentProps<any> {
 }
 
@@ -46,9 +46,11 @@ class CreatePuzzle extends React.Component<CreatePuzzleProps, CreatePuzzleState>
         if (id == null || ySize == null || xSize == null) {
             return
         }
+        this.setState((prevState) => ({...prevState, loading: true}))
         let res = await this.client.postJson(`/puzzles/${id}`, {ySize: ySize, xSize: xSize})
         if (res == null || res.status != 200) {
             console.log("error occurred!")
+            this.setState((prevState) => ({...prevState, loading: false}))
             return
         }
         this.props.history.push(`/puzzles/${id}`)
@@ -57,33 +59,49 @@ class CreatePuzzle extends React.Component<CreatePuzzleProps, CreatePuzzleState>
     render() {
         return (
             <div>
-                Upload Puzzle: 
-                <input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/gif"
-                    onChange={(e) => this.uploadFile(e.target.files)} />
-                X:
-                <input
-                    type="number" 
-                    onChange={(e) => this.setState({xSize: parseInt(e.target.value)})} />
-                Y:
-                <input
-                    type="number" 
-                    onChange={(e) => this.setState({ySize: parseInt(e.target.value)})} />
-                <button
-                    type="button"
-                    onClick={() => this.createPuzzle()}>
-                    GO
-                </button>
-                {this.state.loading && <p>loading...</p>}
-                <br />
-                {this.state.imageID != null && (
+                CREATE
+                <ul className="list">
+                    <li className="item" >
+                        <div style={{padding: "15px", display: "inline"}}>
+                            Choose Picture:
+                        </div>
+                        <input 
+                            className="ipt"
+                            type="file" 
+                            accept="image/png, image/jpeg, image/gif"
+                            onChange={(e) => this.uploadFile(e.target.files)} />
+                    </li>
+                    <li className="item" >
+                        <div style={{padding: "15px", display: "inline"}}>Choose Height:</div>
+                        <input
+                            className="ipt"
+                            type="number" 
+                            onChange={(e) => this.setState({xSize: parseInt(e.target.value)})} />
+                        <br />
+                        <br />
+                        <div style={{padding: "15px", display: "inline"}}>Choose Width:</div>
+                        <input
+                            className="ipt"
+                            type="number" 
+                            onChange={(e) => this.setState({ySize: parseInt(e.target.value)})} />
+                    </li>
+                    <li className="item" >
+                        <button
+                            className="btn"
+                            type="button"
+                            onClick={() => this.createPuzzle()}>
+                            CREATE
+                        </button>
+                    </li>
+                </ul>
+                {this.state.loading ? <Loading /> : 
+                    (this.state.imageID != null && (
                     <div>
                         <p>Preview:</p>
                         <img src={`${this.client.host()}/images/${this.state.imageID}/preview.jpeg`} alt="" />
                     </div>
-                )}
-                
+                    ))
+                }
             </div>
         )
     }

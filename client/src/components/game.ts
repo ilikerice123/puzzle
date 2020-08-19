@@ -1,5 +1,5 @@
 
-type Pos = {
+export interface Pos {
     X: number
     Y: number
 }
@@ -13,6 +13,8 @@ export interface PuzzleObject {
     nextUpdateID: number
     xSize: number
     ySize: number
+    imageWidth: number
+    imageHeight: number
     lastUpdated: string
     currentUsers: Map<string, UserObject>
 }
@@ -28,4 +30,19 @@ export interface PuzzlePieceObject {
     currPos: Pos
     image: string
     heldBy: string
+}
+
+export interface PuzzleUpdateObject {
+    id: number
+    action: number
+    userID: string
+    piece1Pos: Pos
+    piece2Pos: Pos
+    delta: number
+}
+
+export interface PuzzleRequestObject {
+    action: number
+    userID: string
+    position: Pos
 }

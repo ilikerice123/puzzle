@@ -2,7 +2,8 @@ package game
 
 // Position represents a 2d position on the puzzle
 type Position struct {
-	X, Y int
+	X int `json:"X"`
+	Y int `json:"Y"`
 }
 
 // Piece represents a single puzzle piece

@@ -27,7 +27,7 @@ func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	height, width := normalizeImage(img, ySize, xSize)
+	height, width := NormalizeImage(img, ySize, xSize)
 	pieceHeight := height / ySize
 	pieceLength := width / xSize
 	cropRect := image.Rectangle{}
@@ -60,14 +60,14 @@ func SliceImage(filename string, ySize int, xSize int) ([][]string, error) {
 
 // DownsizeImage resizes the image for a preview
 func DownsizeImage(img image.Image) image.Image {
-	filter := gift.New(gift.Resize(200, 0, gift.LanczosResampling))
+	filter := gift.New(gift.Resize(400, 0, gift.LanczosResampling))
 	dst := image.NewNRGBA(filter.Bounds(img.Bounds()))
 	filter.Draw(dst, img)
 	return dst
 }
 
-// normalizeImage resizes the image so the bounds are a multiple of ySize and xSize
-func normalizeImage(img image.Image, ySize int, xSize int) (height int, width int) {
+// NormalizeImage resizes the image so the bounds are a multiple of ySize and xSize
+func NormalizeImage(img image.Image, ySize int, xSize int) (height int, width int) {
 	bounds := img.Bounds()
 	height = bounds.Max.Y - bounds.Min.Y
 	width = bounds.Max.X - bounds.Min.X
