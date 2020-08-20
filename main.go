@@ -36,7 +36,7 @@ func main() {
 	api.RegisterImagesRoutes(apiRouter)
 	api.RegisterUsersRoutes(apiRouter)
 	api.RegisterPuzzlesRoutes(apiRouter)
-	api.RegisterFrontEnd(apiRouter)
+	api.RegisterFrontEnd(r)
 
 	router := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com"},
