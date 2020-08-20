@@ -6,11 +6,7 @@ export default class PuzzleClient {
 
     constructor(){
         this.serverHost = GetHost()
-        if (this.serverHost.includes("localhost")){
-            this.socketHost = this.serverHost.replace("http", "ws")
-        } else {
-            throw new Error("unimplemented")
-        }
+        this.socketHost = this.serverHost.replace("http", "ws")
     }
 
     host(): string {
