@@ -38,17 +38,23 @@ func main() {
 	api.RegisterPuzzlesRoutes(apiRouter)
 
 	router := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com"},
 		AllowCredentials: true}).Handler(r)
 
-	srv := &http.Server{
+	// serving react
+	indexServer := http.FileServer(http.Dir("client/build"))
+	r.PathPrefix("/").Handler(indexServer)
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("client/build/static")))
+	r.PathPrefix("/static/").Handler(staticHandler)
+
+	server := &http.Server{
 		Handler: router,
-		Addr:    ":8000",
+		Addr:    ":80",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 24 * time.Hour,
 		ReadTimeout:  24 * time.Hour,
 	}
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(server.ListenAndServe())
 	wait := make(chan int, 1)
 	<-wait
 }

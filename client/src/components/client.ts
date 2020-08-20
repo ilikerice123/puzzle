@@ -62,8 +62,8 @@ export default class PuzzleClient {
 export function GetHost(): string {
     let url = new URL(window.location.href)
     if (url.host.includes("localhost")) {
-        return "http://localhost:8000/api"
+        return "http://localhost/api"
     } else {
-        throw new Error("unimplemented!")
+        return "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com"
     }
 }
