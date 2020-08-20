@@ -6,7 +6,6 @@ import { debounce } from 'ts-debounce';
 import * as CSS from 'csstype';
 import { CSS_COLORS } from './colors'
 import PieceComponent from './Piece';
-import useSound from 'use-sound'
 // https://stackoverflow.com/questions/59247861/how-to-import-a-sound-file-into-react-typescript-component
 const correctSfx = require('./sounds/correct.wav')
 const incorrectSfx = require('./sounds/incorrect.wav')
