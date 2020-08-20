@@ -42,8 +42,10 @@ func main() {
 		AllowCredentials: true}).Handler(r)
 
 	// serving react
-	indexServer := http.FileServer(http.Dir("client/build"))
-	r.PathPrefix("/").Handler(indexServer)
+	// indexServer := http.FileServer(http.Dir("client/build"))
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "client/build/index.html")
+	})
 	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("client/build/static")))
 	r.PathPrefix("/static/").Handler(staticHandler)
 

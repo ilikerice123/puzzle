@@ -60,6 +60,6 @@ export function GetHost(): string {
     if (url.host.includes("localhost")) {
         return "http://localhost/api"
     } else {
-        return "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com"
+        return "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com/api"
     }
 }
