@@ -36,18 +36,11 @@ func main() {
 	api.RegisterImagesRoutes(apiRouter)
 	api.RegisterUsersRoutes(apiRouter)
 	api.RegisterPuzzlesRoutes(apiRouter)
+	api.RegisterFrontEnd(apiRouter)
 
 	router := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://ec2-54-245-184-188.us-west-2.compute.amazonaws.com"},
 		AllowCredentials: true}).Handler(r)
-
-	// serving react
-	// indexServer := http.FileServer(http.Dir("client/build"))
-	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "client/build/index.html")
-	})
-	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("client/build/static")))
-	r.PathPrefix("/static/").Handler(staticHandler)
 
 	server := &http.Server{
 		Handler: router,

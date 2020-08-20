@@ -6,6 +6,10 @@ import { debounce } from 'ts-debounce';
 import * as CSS from 'csstype';
 import { CSS_COLORS } from './colors'
 import PieceComponent from './Piece';
+import useSound from 'use-sound'
+// https://stackoverflow.com/questions/59247861/how-to-import-a-sound-file-into-react-typescript-component
+const correctSfx = require('./sounds/correct.wav')
+const incorrectSfx = require('./sounds/incorrect.wav')
 
 interface PuzzleProps {
     user: UserObject | null,
@@ -50,6 +54,8 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
     conn?: WebSocket
     queue: PuzzleUpdateObject[]
     resizeCallback: any
+    correctSound: HTMLAudioElement
+    incorrectSound: HTMLAudioElement
 
     constructor(props: PuzzleProps) {
         super(props)
@@ -60,6 +66,9 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
             pieceLimits: this.getPieceLimits(),
             done: false
         }
+        this.correctSound = new Audio(correctSfx)
+        this.incorrectSound = new Audio(incorrectSfx)
+
         this.userChanged = this.userChanged.bind(this)
         this.onPieceClicked = this.onPieceClicked.bind(this)
         this.loadPuzzle = this.loadPuzzle.bind(this)
@@ -216,6 +225,18 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
         }
     }
 
+    playSound(delta: number) {
+        if (delta < 0) {
+            this.incorrectSound.play()
+        }
+        if (delta == 1) {
+            this.correctSound.play()
+        }
+        if (delta == 2) {
+            this.correctSound.play().finally(this.correctSound.play)
+        }
+    }
+
     updatePuzzlePieces(
         pos: Pos, piece: PuzzlePieceObject, 
         pos1?: Pos, piece1?: PuzzlePieceObject, delta?: number
@@ -223,6 +244,7 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
         if (this.state.puzzle == null) {
             return
         }
+        delta != null && this.playSound(delta)
 
         this.setState((prevState: PuzzleState) => {
             if (prevState.puzzle == null) {
@@ -380,9 +402,6 @@ function PuzzleGameComponent(
                                                         ...pieceStyle,
                                                         ...PuzzleStyles.img,
                                                         outline: `5px solid ${userColor(piece.heldBy)}`
-                                                        // MozBoxShadow: `inset 0px 0px 0px 5px ${userColor(piece.heldBy)}`,
-                                                        // boxShadow: `inset 0px 0px 0px 5px ${userColor(piece.heldBy)}`,
-                                                        // WebkitBoxShadow: `inset 0px 0px 0px 5px ${userColor(piece.heldBy)}`
                                                     }}
                                                     onClick={props.pieceClicked}
                                                 /> 
