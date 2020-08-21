@@ -7,8 +7,8 @@ import * as CSS from 'csstype';
 import { CSS_COLORS } from './colors'
 import PieceComponent from './Piece';
 // https://stackoverflow.com/questions/59247861/how-to-import-a-sound-file-into-react-typescript-component
-// const correctSfx = require('./sounds/correct.wav')
-// const incorrectSfx = require('./sounds/incorrect.wav')
+const correctSfx = require('./sounds/correct.wav')
+const incorrectSfx = require('./sounds/incorrect.wav')
 
 interface PuzzleProps {
     user: UserObject | null,
@@ -53,8 +53,8 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
     conn?: WebSocket
     queue: PuzzleUpdateObject[]
     resizeCallback: any
-    // correctSound: HTMLAudioElement
-    // incorrectSound: HTMLAudioElement
+    correctSound: HTMLAudioElement
+    incorrectSound: HTMLAudioElement
 
     constructor(props: PuzzleProps) {
         super(props)
@@ -65,9 +65,10 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
             pieceLimits: this.getPieceLimits(),
             done: false
         }
-        // this.correctSound = new Audio(correctSfx)
-        // this.incorrectSound = new Audio(incorrectSfx)
+        this.correctSound = new Audio(correctSfx)
+        this.incorrectSound = new Audio(incorrectSfx)
 
+        this.playSound = this.playSound.bind(this)
         this.userChanged = this.userChanged.bind(this)
         this.onPieceClicked = this.onPieceClicked.bind(this)
         this.loadPuzzle = this.loadPuzzle.bind(this)
@@ -224,17 +225,19 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
         }
     }
 
-    // playSound(delta: number) {
-    //     if (delta < 0) {
-    //         this.incorrectSound.play()
-    //     }
-    //     if (delta == 1) {
-    //         this.correctSound.play()
-    //     }
-    //     if (delta == 2) {
-    //         this.correctSound.play().finally(this.correctSound.play)
-    //     }
-    // }
+    playSound(delta: number) {
+        if (delta < 0) {
+            this.incorrectSound.play()
+        }
+        if (delta == 1) {
+            this.correctSound.play()
+        }
+        if (delta == 2) {
+            this.correctSound.play().then(() => {
+                this.correctSound.play()
+            })
+        }
+    }
 
     updatePuzzlePieces(
         pos: Pos, piece: PuzzlePieceObject, 
@@ -243,7 +246,7 @@ class PuzzleImpl extends React.Component<PuzzleProps, PuzzleState> {
         if (this.state.puzzle == null) {
             return
         }
-        // delta != null && this.playSound(delta)
+        delta != null && this.playSound(delta)
 
         this.setState((prevState: PuzzleState) => {
             if (prevState.puzzle == null) {

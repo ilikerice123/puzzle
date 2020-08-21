@@ -46,6 +46,14 @@ Ex:
 5. Then, we know, given the current puzzle state, we can apply updates with id: 7, 8, 9
 6. Now we are caught up and in sync with the server's view of the puzzle. 
 
+
+## Puzzle Pieces
+
+When the user uploads a picture, the picture is stored under the `images/<uuid>` under the name `original.jpeg`, and a smaller version scaled to 200px is also stored as `preview.jpeg`. When the user specifies a
+height and a width, we process the original image, to create a bunch of smaller images under the same
+directory like `original_<Y>_<X>.jpeg`. Everything under the `images/<uuid>` is served statically from
+`GET /api/images/<uuid>/...`, so the front end will know that piece (3, 4) from puzzle `id1234` looks like the image from `/api/images/id1234/original_3_4.jpeg`.
+
 ## Small Demo
 ![Demo](assets/basicdemo.gif)]
 

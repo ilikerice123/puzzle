@@ -53,7 +53,11 @@ export default function Identity(props: IdentityProps) {
 
     return (
         <div>
-            <div onClick={() => setShow(true)}>
+            <div onClick={() => {
+                setShow(true)
+                setNewName(name || "")
+                setNewUserID(userID || "")
+            }}>
                 {userID == null ? (
                     "Sign in"
                 ) : (
