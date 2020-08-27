@@ -14,6 +14,8 @@ type UserPoolBase interface {
 	AddUser(*User)
 
 	GetUser(string) *User
+
+	Prune()
 }
 
 // UserPool implements UserPoolBase
@@ -32,7 +34,19 @@ type User struct {
 
 // InitUserPool assigns value to globalUserPool
 func InitUserPool() {
-	GlobalUserPool = &UserPool{users: make(map[string]*User)}
+	GlobalUserPool = NewUserPool()
+}
+
+// NewUserPool creates a new user pool
+func NewUserPool() *UserPool {
+	p := &UserPool{users: make(map[string]*User)}
+	scheduler := time.NewTicker(12 * time.Hour)
+	go func() {
+		for range scheduler.C {
+			p.Prune()
+		}
+	}()
+	return p
 }
 
 // NewUser creates a new user
@@ -60,4 +74,15 @@ func (p *UserPool) GetUser(id string) *User {
 func (p *UserPool) DeleteUser(id string) {
 	delete(p.users, id)
 	return
+}
+
+// Prune removes all puzzles from pieceCount that no longer exist
+func (p *UserPool) Prune() {
+	for _, user := range p.users {
+		for puzzleID := range user.PieceCount {
+			if puzzle := GlobalPuzzlePool.GetPuzzle(puzzleID); puzzle == nil {
+				delete(user.PieceCount, puzzleID)
+			}
+		}
+	}
 }

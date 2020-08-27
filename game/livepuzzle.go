@@ -13,6 +13,8 @@ type LivePuzzleBase interface {
 	ID() string
 
 	Results() map[string]int
+
+	Complete() bool
 }
 
 // LivePuzzle implements the LivePuzzleBase interface
@@ -54,6 +56,11 @@ func (p *LivePuzzle) ID() string {
 // Results returns the results of the puzzle
 func (p *LivePuzzle) Results() map[string]int {
 	return p.Puzzle.Results()
+}
+
+// Complete returns whether the puzzle is complete
+func (p *LivePuzzle) Complete() bool {
+	return p.Puzzle.Complete()
 }
 
 // AddRequest adds a request to the LivePuzzle

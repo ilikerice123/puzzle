@@ -97,7 +97,6 @@ class CreatePuzzle extends React.Component<CreatePuzzleProps, CreatePuzzleState>
                 {this.state.loading ? <Loading /> : 
                     (this.state.imageID != null && (
                     <div>
-                        <p>Preview:</p>
                         <img src={`${this.client.host()}/images/${this.state.imageID}/preview.jpeg`} alt="" />
                     </div>
                     ))
