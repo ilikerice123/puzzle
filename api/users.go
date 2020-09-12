@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/ilikerice123/puzzle/game"
+	"github.com/ilikerice123/puzzle/store"
 )
 
 // RegisterUsersRoutes registers /api/images routers
@@ -15,6 +16,8 @@ func RegisterUsersRoutes(r *mux.Router) {
 	usersRouter.HandleFunc("/", CreateUser).Methods("POST")
 	usersRouter.HandleFunc("/{id}", GetUser).Methods("GET")
 	usersRouter.HandleFunc("/{id}/", GetUser).Methods("GET")
+	usersRouter.HandleFunc("/auth", AuthUser).Methods("GET")
+	usersRouter.HandleFunc("/auth/", AuthUser).Methods("GET")
 }
 
 // GetUser gets a user given an id
@@ -27,6 +30,15 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, 404, map[string]string{"error": "player not found"})
 }
 
+// AuthUser returns the uuid of a user given a username and password
+func AuthUser(w http.ResponseWriter, r *http.Request) {
+	user, password, ok := r.BasicAuth()
+	if !ok {
+		WriteError(w, 401, map[string]string{"error": "not authenticated properly"})
+	}
+	WriteSuccess(w, map[string]string{"user": user, "pass": password})
+}
+
 // CreateUser creates a user given a string
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var userInfo map[string]string
@@ -36,11 +48,12 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := userInfo["name"]
-	if name == "" {
-		WriteError(w, 422, map[string]string{"error": "must provide name"})
+	password := userInfo["password"]
+	if name == "" || password == "" {
+		WriteError(w, 422, map[string]string{"error": "must provide name and password"})
 		return
 	}
-	user := game.NewUser(name)
+	user := store.NewUser(name, password)
 	game.GlobalUserPool.AddUser(user)
 	WriteSuccess(w, user)
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ilikerice123/puzzle/fs"
+	"github.com/ilikerice123/puzzle/store"
 
 	"github.com/ilikerice123/puzzle/picture"
 )
@@ -23,22 +24,24 @@ type PuzzleBase interface {
 	GetID() string
 
 	Results() map[string]int
+
+	OnComplete()
 }
 
 // Puzzle representing a non-threadsafe puzzle objec that implements PuzzleBase
 type Puzzle struct {
-	ID            string            `json:"id"`
-	Pieces        [][]*Piece        `json:"pieces"`
-	HeldPieces    map[string]*Piece `json:"heldPieces"`
-	Size          int               `json:"size"`
-	PiecesCorrect int               `json:"piecesCorrect"`
-	NextUpdateID  int               `json:"nextUpdateID"`
-	XSize         int               `json:"xSize"`
-	YSize         int               `json:"ySize"`
-	ImageWidth    int               `json:"imageWidth"`
-	ImageHeight   int               `json:"imageHeight"`
-	LastUpdated   time.Time         `json:"lastUpdated"`
-	CurrentUsers  map[string]*User  `json:"currentUsers"`
+	ID            string                 `json:"id"`
+	Pieces        [][]*Piece             `json:"pieces"`
+	HeldPieces    map[string]*Piece      `json:"heldPieces"`
+	Size          int                    `json:"size"`
+	PiecesCorrect int                    `json:"piecesCorrect"`
+	NextUpdateID  int                    `json:"nextUpdateID"`
+	XSize         int                    `json:"xSize"`
+	YSize         int                    `json:"ySize"`
+	ImageWidth    int                    `json:"imageWidth"`
+	ImageHeight   int                    `json:"imageHeight"`
+	LastUpdated   time.Time              `json:"lastUpdated"`
+	CurrentUsers  map[string]*store.User `json:"currentUsers"`
 	updates       chan<- *Update
 	users         UserPoolBase
 }
@@ -68,7 +71,7 @@ func NewPuzzle(
 		PiecesCorrect: 0,
 		NextUpdateID:  0,
 		LastUpdated:   time.Now(),
-		CurrentUsers:  make(map[string]*User),
+		CurrentUsers:  make(map[string]*store.User),
 		updates:       updatesChannel,
 		users:         users,
 		XSize:         xSize,
@@ -134,6 +137,11 @@ func (p *Puzzle) Shuffle() {
 	}
 }
 
+// OnComplete executes completion logic
+func (p *Puzzle) OnComplete() {
+
+}
+
 // Results returns the results of the puzzle
 func (p *Puzzle) Results() map[string]int {
 	results := make(map[string]int)
@@ -180,10 +188,12 @@ func (p *Puzzle) hold(r Request) error {
 	otherPiece := p.HeldPieces[r.UserID]
 	delta := p.swap(piece, otherPiece)
 	// swap (or release if same as held piece)
-	// TODO: this logic should be moved to swap
-	// needs to be after swap for some reason, or else the pointer is gone? what?
+	// TODO: needs to be after swap for some reason, or else the pointer is gone? what?
 	delete(p.HeldPieces, r.UserID)
 	p.PiecesCorrect += delta
+	if p.Complete() {
+		p.OnComplete()
+	}
 
 	// update user stats
 	reqUser.PieceCount[p.ID] = reqUser.PieceCount[p.ID] + delta
@@ -211,6 +221,11 @@ func (p *Puzzle) addUser(id string) error {
 // removeUser removes a user from current users
 func (p *Puzzle) removeUser(id string) {
 	delete(p.CurrentUsers, id)
+	if heldPiece, exists := p.HeldPieces[id]; exists {
+		heldPiece.HeldBy = ""
+		p.updates <- p.newUpdate(SWAP, id, heldPiece.CurrPos, heldPiece.CurrPos, 0)
+	}
+	delete(p.HeldPieces, id)
 	p.updates <- p.newUpdate(LEAVE, id, Position{}, Position{}, 0)
 }
 
@@ -250,7 +265,6 @@ func (p *Puzzle) newUpdate(
 	piece1 Position,
 	piece2 Position,
 	delta int) *Update {
-	// follow the update id dictated by the puzzle
 	p.NextUpdateID++
 	return &Update{
 		ID:        p.NextUpdateID - 1,

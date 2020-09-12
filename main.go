@@ -11,6 +11,7 @@ import (
 	"github.com/ilikerice123/puzzle/api"
 	"github.com/ilikerice123/puzzle/fs"
 	"github.com/ilikerice123/puzzle/game"
+	"github.com/ilikerice123/puzzle/store"
 	"github.com/rs/cors"
 )
 
@@ -30,6 +31,7 @@ func main() {
 	game.InitUserPool()
 	game.InitPuzzlePool()
 	api.InitUpgrader()
+	store.InitStore()
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api").Subrouter()

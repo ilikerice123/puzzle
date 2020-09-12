@@ -3,7 +3,7 @@ package game
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/ilikerice123/puzzle/store"
 )
 
 // GlobalUserPool represents all the players
@@ -11,25 +11,16 @@ var GlobalUserPool UserPoolBase
 
 // UserPoolBase is the interface for a pool of users
 type UserPoolBase interface {
-	AddUser(*User)
+	AddUser(*store.User)
 
-	GetUser(string) *User
+	GetUser(string) *store.User
 
 	Prune()
 }
 
 // UserPool implements UserPoolBase
 type UserPool struct {
-	users map[string]*User
-}
-
-// User represents a user
-type User struct {
-	ID             string         `json:"id"`
-	Name           string         `json:"name"`
-	Created        time.Time      `json:"created"`
-	PieceCount     map[string]int `json:"-"`
-	LifetimePieces int            `json:"lifetimePieces"`
+	users map[string]*store.User
 }
 
 // InitUserPool assigns value to globalUserPool
@@ -39,7 +30,7 @@ func InitUserPool() {
 
 // NewUserPool creates a new user pool
 func NewUserPool() *UserPool {
-	p := &UserPool{users: make(map[string]*User)}
+	p := &UserPool{users: make(map[string]*store.User)}
 	scheduler := time.NewTicker(12 * time.Hour)
 	go func() {
 		for range scheduler.C {
@@ -49,25 +40,20 @@ func NewUserPool() *UserPool {
 	return p
 }
 
-// NewUser creates a new user
-func NewUser(name string) *User {
-	return &User{
-		ID:             uuid.New().String(),
-		Name:           name,
-		Created:        time.Now(),
-		PieceCount:     make(map[string]int),
-		LifetimePieces: 0}
-}
-
 // AddUser adds a user to the pool
-func (p *UserPool) AddUser(u *User) {
+func (p *UserPool) AddUser(u *store.User) {
 	p.users[u.ID] = u
 	return
 }
 
 // GetUser gets a user from the pool
-func (p *UserPool) GetUser(id string) *User {
+func (p *UserPool) GetUser(id string) *store.User {
 	return p.users[id]
+}
+
+// AuthUser authenticates a user from the pool
+func (p *UserPool) AuthUser(name string, password string) {
+
 }
 
 // DeleteUser deletes a user from the pool
